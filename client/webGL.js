@@ -1157,6 +1157,7 @@ export default class WebGL {
                     var imgWrapper = document.createElement('p')
                     imgWrapper.style['display'] = 'inline-block';
                     imgWrapper.style['vertical-align'] = 'bottom';
+                    imgWrapper.style['margin'] = '0px 10px 0px 0px';
                     var songImg = document.createElement('img');
                     songImg.height = '175'
                     songImg.src = curImage;
@@ -1167,8 +1168,7 @@ export default class WebGL {
                     // track detail on the right
                     var songDetail = document.createElement('p');
                     songDetail.style['display'] = 'inline-block';
-                    songDetail.style['margin'] = '10px';
-                    songDetail.style['font-size'] = '20px';
+                    songDetail.style['font-size'] = '22px';
                     songDetail.innerHTML = '<b>' + curName + '</b><br>';
 
                     console.log(curArtists.length);
