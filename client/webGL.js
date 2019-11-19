@@ -1160,13 +1160,14 @@ export default class WebGL {
                     var songImg = document.createElement('img');
                     songImg.height = '175'
                     songImg.src = curImage;
+                    songImg.classList.add('responsive');
                     imgWrapper.appendChild(songImg);
                     songDiv.appendChild(imgWrapper);
 
                     // track detail on the right
                     var songDetail = document.createElement('p');
                     songDetail.style['display'] = 'inline-block';
-                    songDetail.style['padding'] = '0px 0px 10px 20px';
+                    songDetail.style['margin'] = '10px';
                     songDetail.style['font-size'] = '20px';
                     songDetail.innerHTML = '<b>' + curName + '</b><br>';
 
