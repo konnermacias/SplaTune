@@ -35,6 +35,7 @@ let config = {
     CURL: 0,
     SPLAT_RADIUS: 0.25,
     SPLAT_FORCE: 6000,
+    AUTOSPLAT_FROM_CENTER: true,
     SHADING: true,
     COLORFUL: true,
     COLOR_UPDATE_SPEED: 10,
@@ -255,6 +256,10 @@ export default class WebGL {
             autosplatFolder.add(config, 'AUTOSPLAT_ENABLED').name('enable auto-splat').listen();
             autosplatFolder.add(config, 'AUTOSPLAT_DELAY', 0.1, 5.0).name('auto-splat interval seconds');
             autosplatFolder.add(config, 'AUTOSPLAT_COUNT', 1, 10, 1).name('number of auto-splats');
+
+            // sprout from center
+            let swimFolder = gui.addFolder('Swim');
+            swimFolder.add(config, 'AUTOSPLAT_FROM_CENTER').name('enable sprouts').listen();
 
             let bloomFolder = gui.addFolder('Bloom');
             bloomFolder.add(config, 'BLOOM').name('enabled').onFinishChange(updateKeywords);
@@ -1475,16 +1480,104 @@ export default class WebGL {
             return dt;
         }
 
+        function correctDirectionFromCenter(x, y) {
+            var dir = { least_angle : 0, greatest_angle : 0};
+            if (x > 0 && y > 0) {
+                dir.least_angle = 0;
+                dir.greatest_angle = 90;
+            } else if (x <= 0 && y > 0) {
+                dir.least_angle = 90;
+                dir.greatest_angle = 180;
+            } else if (x <= 0 && y <= 0) {
+                dir.least_angle = 180;
+                dir.greatest_angle = 270;
+            } else {
+                dir.least_angle = 270;
+                dir.greatest_angle = 360;
+            }
+            return dir;
+        }
+
+        function toDegrees(angleRad) {
+            return angleRad * 180 / Math.PI
+        }
+
+        function getVectorAngle(x, y, dx, dy) {
+            var angle = 0;
+            if (x > 0 && y > 0) {
+                angle = toDegrees(Math.atan(dy/dx));
+            } else if (x <= 0 && y > 0) {
+                angle = 180 - Math.abs(toDegrees(Math.atan(dy/dx)));
+            } else if (x <= 0 && y <= 0) {
+                angle = 180 + toDegrees(Math.tan(dy/dx));
+            } else {
+                angle = 360 - Math.abs(toDegrees(Math.tan(dy/dx)));
+            }
+            return angle;
+        }
+
+        /*
+
+        Sprout splat coming from the center.
+
+        For all points p in SplaTune space S (x, y), p has a vector v 
+        with length determined by volumeMultiple m and direction 
+        determine by function F =
+        {
+            tan-1(y/x),         x > 0,  y > 0,
+
+            180 + tan-1(y/x),     x <= 0, y > 0,
+
+            180 + tan-1(y/x),     x <= 0, y <= 0,
+
+            360 + tan-1(y/x),     x > 0,  y <= 0
+        }
+
+        */
+       function isSproutingFromCenter(x, y, dx, dy) {
+
+        /*
+            compare if current angle instance is correctly sprouting
+            outwards out of the center.
+
+            Need to alter x and y to reflect quadrant
+        */
+            var nx = x - 0.5;
+            var ny = y - 0.5;
+            var correctDirection = correctDirectionFromCenter(nx, ny)
+            var angleInstance = getVectorAngle(nx, ny, dx, dy)
+
+            console.log(correctDirection.least_angle + ' <= ' + angleInstance + ' <= ' + correctDirection.greatest_angle + ' ?')
+            return correctDirection.least_angle <= angleInstance &&
+                        angleInstance <= correctDirection.greatest_angle
+        }
+
         function insertSplat(numSplats, r, g, b, volumeMultiplier) {
             for (let i = 0; i < numSplats; i++) {
                 const color = generateColor();
-                color.r *= r * volumeMultiplier;
+                color.r *= r * volumeMultiplier; // WTF this should be on x
                 color.g *= g * volumeMultiplier; 
                 color.b *= b * volumeMultiplier;
                 const x = Math.random();
                 const y = Math.random();
-                const dx = 1000 * (Math.random() - 0.5);
-                const dy = 1000 * (Math.random() - 0.5);
+                let dx = Math.random() - 0.5;
+                let dy = Math.random() - 0.5;
+
+                if (config.AUTOSPLAT_FROM_CENTER) {
+                    // loop until we have a dx, dy combo going in the right direction, if not get new dx dy
+                    while (!isSproutingFromCenter(x, y, dx, dy))
+                    {
+                        console.log('False!')
+                        console.log('trying again for (x, y, dx, dy) = (' + x + ',' + y + ',' + dx + ',' + dy + ')')
+                        dx = Math.random() - 0.5;
+                        dy = Math.random() - 0.5; // multiply by 1000 to get crazy effect
+                    }
+                    console.log('True!')
+                }
+                
+                dx *= 1000 * Math.pow(volumeMultiplier, 2);
+                dy *= 1000 * Math.pow(volumeMultiplier, 2);
+                
                 splat(x, y, dx, dy, color);
             }
         }
