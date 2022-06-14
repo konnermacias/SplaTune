@@ -3,6 +3,18 @@ import WebGL from './webGL.js'
 import { interpolateRgb, interpolateBasis } from 'd3-interpolate'
 
 
+let volumeMultipliers = {
+    'beat': 1,
+    'tatum': 1,
+    'bar': 1,
+    'section': 1,
+    'segment': 1,
+}
+
+const naturalVolumeRange = 2; // Input arrives within (0, 2)
+const scaledVolumeRange = 3; // Scaling range to (0, 10)
+
+
 export default class Splatter {
   constructor() {
     console.log('i am born')
@@ -13,6 +25,14 @@ export default class Splatter {
 
     this.webgl = new WebGL()
     this.webgl.run()
+  }
+
+  scaleVolume(type = '') {
+    const preprocessedVolume = Math.pow(this.sync.volume, volumeMultipliers[type])
+    // (((oldVal - oldMin) * newRange) / oldRange) + newMin
+    const scaledVolume = (preprocessedVolume * scaledVolumeRange) / naturalVolumeRange
+    console.log('volume => old: ', this.sync.volume, 'preproc: ', preprocessedVolume, ', new: ', scaledVolume);
+    return scaledVolume;
   }
 
 
@@ -28,23 +48,23 @@ export default class Splatter {
 
   hooks() {
     this.sync.on('beat', beat => {
-      console.log(this.sync.volume);
       if (this.webgl.getConfig().ON_BEAT) {
-        const volume = Math.pow(this.sync.volume, 1)
-        this.webgl.autoSplat(volume);
+        const volume = this.scaleVolume('beat')
+        this.webgl.autoSplat(volume, 'beat');
       }
     })
 
     this.sync.on('bar', beat => {
       if (this.webgl.getConfig().ON_BAR) {
-        this.webgl.extraSplat(this.sync.volume);
+        const volume = this.scaleVolume('bar')
+        this.webgl.extraSplat(volume, 'bar');
       }
     })
 
     this.sync.on('tatum', beat => {
       if (this.webgl.getConfig().ON_TATUM) {
-        const volume = Math.pow(this.sync.volume, 2)
-        this.webgl.autoSplat(volume);
+        const volume = this.scaleVolume('tatum')
+        this.webgl.autoSplat(volume, 'tatum');
       }
       // send song update on every item
       this.webgl.updateSong(this.sync.state.currentlyPlaying);
@@ -53,13 +73,15 @@ export default class Splatter {
 
     this.sync.on('section', beat => {
       if (this.webgl.getConfig().ON_SECTION) {
-        this.webgl.autoSplat(this.sync.volume);
+        const volume = this.scaleVolume('section')
+        this.webgl.autoSplat(volume, 'section');
       }
     })
 
     this.sync.on('segment', beat => {
       if (this.webgl.getConfig().ON_SEGMENT) {
-        this.webgl.autoSplat(this.sync.volume);
+        const volume = this.scaleVolume('segment')
+        this.webgl.autoSplat(volume, 'segment');
       }      
     })
 

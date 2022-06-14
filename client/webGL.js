@@ -60,6 +60,8 @@ let config = {
     ON_BAR: true,
     ON_SECTION: false,
     ON_SEGMENT: false,
+    IS_BEAT: false,
+    MUSIC_TYPE: '',
     r: 10.0,
     g: 10.0,
     b: 10.0
@@ -77,15 +79,16 @@ export default class WebGL {
 
     getConfig() { return config; }
 
-    autoSplat(volume) {
+    autoSplat(volume, music_type = '') {
         // turn on and set volume multiplier
         config.AUTOSPLAT_ENABLED = true;
+        config.MUSIC_TYPE = music_type;
         volumeMultiplier = isFinite(volume) ? volume : 1;
     }
 
-    extraSplat(volume) {
+    extraSplat(volume, music_type = '') {
         config.EXTRA_SPLAT = true;
-        this.autoSplat(volume);
+        this.autoSplat(volume, music_type);
     }
 
     updateSong(curPlaying) {
@@ -252,7 +255,6 @@ export default class WebGL {
 
             // NEW AUTO SPLATS
             let autosplatFolder = gui.addFolder('Auto-splat');
-            autosplatFolder.add(config, 'AUTOSPLAT_ENABLED').name('enable auto-splat').listen();
             autosplatFolder.add(config, 'AUTOSPLAT_DELAY', 0.1, 5.0).name('auto-splat interval seconds');
             autosplatFolder.add(config, 'AUTOSPLAT_COUNT', 1, 10, 1).name('number of auto-splats');
 
@@ -925,6 +927,14 @@ export default class WebGL {
             }
         })();
 
+        let splatRadiusSettings = {
+            'beat': 100.0,
+            'tatum': 100.0,
+            'bar': 100,
+            'section': 100.0,
+            'segment': 100.0,
+        }
+
         let dye;
         let velocity;
         let divergence;
@@ -1487,6 +1497,7 @@ export default class WebGL {
                 const dy = 1000 * (Math.random() - 0.5);
                 splat(x, y, dx, dy, color);
             }
+            config.IS_BEAT = false;
         }
 
         function multipleSplats (amount) {
@@ -1510,7 +1521,19 @@ export default class WebGL {
             gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
             gl.uniform2f(splatProgram.uniforms.point, x, y);
             gl.uniform3f(splatProgram.uniforms.color, dx, dy, 0.0);
-            gl.uniform1f(splatProgram.uniforms.radius, correctRadius(config.SPLAT_RADIUS / 100.0));
+            let radius = config.SPLAT_RADIUS / 100.0;
+            if (config.AUTOSPLAT_ENABLED && config.MUSIC_TYPE !== '') {
+                // 5 is default splat radius 100 / [1, 10]
+                // 100 / 10 = [10, 100] volume multiplier
+                // we need to have default values of 100 and scale between (0, 10)
+                console.log('scaling with ', splatRadiusSettings[config.MUSIC_TYPE] / volumeMultiplier)
+                radius = (config.SPLAT_RADIUS / (splatRadiusSettings[config.MUSIC_TYPE] / volumeMultiplier));
+            }
+            // Splat radius is [0, 1]
+            // With dividend being [10, 100]
+            // median = 0.5 / 5 = 0.01 max
+            console.log('splat radius: ', config.SPLAT_RADIUS, ' using radius: ', radius, ' for music type: ', config.MUSIC_TYPE)
+            gl.uniform1f(splatProgram.uniforms.radius, correctRadius(radius));
             blit(velocity.write.fbo);
             velocity.swap();
 
