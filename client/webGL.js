@@ -60,7 +60,6 @@ let config = {
     ON_BAR: true,
     ON_SECTION: false,
     ON_SEGMENT: false,
-    IS_BEAT: false,
     MUSIC_TYPE: '',
     r: 10.0,
     g: 10.0,
@@ -1497,7 +1496,6 @@ export default class WebGL {
                 const dy = 1000 * (Math.random() - 0.5);
                 splat(x, y, dx, dy, color);
             }
-            config.IS_BEAT = false;
         }
 
         function multipleSplats (amount) {

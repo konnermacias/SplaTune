@@ -8,7 +8,6 @@ const scaledVolumeRange = 3; // Scaling range to (0, 3)
 
 export default class Splatter {
   constructor() {
-    console.log('i am born')
     // now we are listening
     this.sync = new Sync(1) // pass in volume smoothing
     this.watch()
