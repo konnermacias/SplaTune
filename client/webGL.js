@@ -24,6 +24,108 @@ SOFTWARE.
 
 const dat = require('./dat.gui.min.js');
 
+class ConfigVal {
+    constructor(m) {
+        console.log('created configval: ', m)
+        this.m = m
+    }
+
+    get(preset) {
+        console.log('getting val from: ', this.m)
+        if (preset in this.m) {
+          return this.m[preset]
+        }
+        return this.m['default']
+    }
+}
+
+let configs = {
+    'Romero': {
+        SIM_RESOLUTION: 128,
+        DYE_RESOLUTION: 1024,
+        CAPTURE_RESOLUTION: 512,
+        DENSITY_DISSIPATION: 1,
+        VELOCITY_DISSIPATION: 0.2,
+        PRESSURE: 0.8,
+        PRESSURE_ITERATIONS: 20,
+        CURL: 0,
+        SPLAT_RADIUS: 0.25,
+        SPLAT_FORCE: 6000,
+        SHADING: true,
+        COLORFUL: true,
+        COLOR_UPDATE_SPEED: 10,
+        PAUSED: false,
+        BACK_COLOR: { r: 0, g: 0, b: 0 },
+        TRANSPARENT: false,
+        BLOOM: false,
+        BLOOM_ITERATIONS: 8,
+        BLOOM_RESOLUTION: 256,
+        BLOOM_INTENSITY: 0.8,
+        BLOOM_THRESHOLD: 0.6,
+        BLOOM_SOFT_KNEE: 0.7,
+        SUNRAYS: true,
+        SUNRAYS_RESOLUTION: 196,
+        SUNRAYS_WEIGHT: 1.0,
+        AUTOSPLAT_ENABLED: false,
+        AUTOSPLAT_DELAY: 1,
+        AUTOSPLAT_COUNT: 1,
+        EXTRA_SPLAT: false,
+        SHOW_TRACK: true,
+        ON_BEAT: true,
+        ON_TATUM: false,
+        ON_BAR: true,
+        ON_SECTION: false,
+        ON_SEGMENT: false,
+        MUSIC_TYPE: '',
+        PRESET: 'Romero',
+        r: 10.0,
+        g: 10.0,
+        b: 10.0,
+    },
+    'Flagstaff': {
+        SIM_RESOLUTION: 64,
+        DYE_RESOLUTION: 1024,
+        CAPTURE_RESOLUTION: 512,
+        DENSITY_DISSIPATION: 1,
+        VELOCITY_DISSIPATION: 0.2,
+        PRESSURE: 0.8,
+        PRESSURE_ITERATIONS: 20,
+        CURL: 0,
+        SPLAT_RADIUS: 0.25,
+        SPLAT_FORCE: 6000,
+        SHADING: true,
+        COLORFUL: true,
+        COLOR_UPDATE_SPEED: 10,
+        PAUSED: false,
+        BACK_COLOR: { r: 0, g: 0, b: 0 },
+        TRANSPARENT: false,
+        BLOOM: false,
+        BLOOM_ITERATIONS: 8,
+        BLOOM_RESOLUTION: 256,
+        BLOOM_INTENSITY: 0.8,
+        BLOOM_THRESHOLD: 0.6,
+        BLOOM_SOFT_KNEE: 0.7,
+        SUNRAYS: true,
+        SUNRAYS_RESOLUTION: 196,
+        SUNRAYS_WEIGHT: 1.0,
+        AUTOSPLAT_ENABLED: false,
+        AUTOSPLAT_DELAY: 1,
+        AUTOSPLAT_COUNT: 1,
+        EXTRA_SPLAT: false,
+        SHOW_TRACK: true,
+        ON_BEAT: true,
+        ON_TATUM: false,
+        ON_BAR: true,
+        ON_SECTION: false,
+        ON_SEGMENT: false,
+        MUSIC_TYPE: '',
+        PRESET: 'Romero',
+        r: 10.0,
+        g: 10.0,
+        b: 10.0,
+    }
+}
+
 let config = {
     SIM_RESOLUTION: 128,
     DYE_RESOLUTION: 1024,
@@ -61,6 +163,7 @@ let config = {
     ON_SECTION: false,
     ON_SEGMENT: false,
     MUSIC_TYPE: '',
+    PRESET: 'Romero',
     r: 10.0,
     g: 10.0,
     b: 10.0
@@ -76,17 +179,17 @@ export default class WebGL {
     constructor() {
     }
 
-    getConfig() { return config; }
+    getConfig() { return configs[config.PRESET]; }
 
     autoSplat(volume, music_type = '') {
         // turn on and set volume multiplier
-        config.AUTOSPLAT_ENABLED = true;
-        config.MUSIC_TYPE = music_type;
+        configs[config.PRESET].AUTOSPLAT_ENABLED = true;
+        configs[config.PRESET].MUSIC_TYPE = music_type;
         volumeMultiplier = isFinite(volume) ? volume : 1;
     }
 
     extraSplat(volume, music_type = '') {
-        config.EXTRA_SPLAT = true;
+        configs[config.PRESET].EXTRA_SPLAT = true;
         this.autoSplat(volume, music_type);
     }
 
@@ -133,13 +236,13 @@ export default class WebGL {
         const { gl, ext } = getWebGLContext(canvas);
 
         if (isMobile()) {
-            config.DYE_RESOLUTION = 512;
+            configs[config.PRESET].DYE_RESOLUTION = 512;
         }
         if (!ext.supportLinearFiltering) {
-            config.DYE_RESOLUTION = 512;
-            config.SHADING = false;
-            config.BLOOM = false;
-            config.SUNRAYS = false;
+            configs[config.PRESET].DYE_RESOLUTION = 512;
+            configs[config.PRESET].SHADING = false;
+            configs[config.PRESET].BLOOM = false;
+            configs[config.PRESET].SUNRAYS = false;
         }
 
         startGUI();
@@ -235,48 +338,51 @@ export default class WebGL {
         function startGUI () {
             // loops here
             var gui = new dat.GUI({ width: 300 });
-            gui.add(config, 'DYE_RESOLUTION', { 'high': 1024, 'medium': 512, 'low': 256, 'very low': 128 }).name('quality').onFinishChange(initFramebuffers);
-            gui.add(config, 'SIM_RESOLUTION', { '32': 32, '64': 64, '128': 128, '256': 256 }).name('sim resolution').onFinishChange(initFramebuffers);
-            gui.add(config, 'DENSITY_DISSIPATION', 0, 4.0).name('density diffusion');
-            gui.add(config, 'VELOCITY_DISSIPATION', 0, 4.0).name('velocity diffusion');
-            gui.add(config, 'PRESSURE', 0.0, 1.0).name('pressure');
-            gui.add(config, 'CURL', 0, 50).name('vorticity').step(1);
-            gui.add(config, 'SPLAT_RADIUS', 0.01, 1.0).name('splat radius');
-            gui.add(config, 'SHADING').name('shading').onFinishChange(updateKeywords);
-            gui.add(config, 'COLORFUL').name('colorful');
-            gui.add(config, 'PAUSED').name('paused').listen();
-            gui.add(config, 'SHOW_TRACK').name('show track').listen()
 
-            // here's where you add splats
-            gui.add({ fun: () => {
-                splatStack.push(parseInt(Math.random() * 20) + 5);
-            } }, 'fun').name('Random splats');
+            // control menu
+            gui.add(config, 'PRESET', { 'Romero': 'Romero', 'Flagstaff': 'Flagstaff'}).name('Default Preset').onFinishChange(startGUI);
 
-            // NEW AUTO SPLATS
-            let autosplatFolder = gui.addFolder('Auto-splat');
-            autosplatFolder.add(config, 'AUTOSPLAT_DELAY', 0.1, 5.0).name('auto-splat interval seconds');
-            autosplatFolder.add(config, 'AUTOSPLAT_COUNT', 1, 10, 1).name('number of auto-splats');
+            let fluidsFolder = gui.addFolder('Fluid')
+            fluidsFolder.add(configs[config.PRESET], 'DYE_RESOLUTION', { 'high': 1024, 'medium': 512, 'low': 256, 'very low': 128 }).name('quality').onFinishChange(initFramebuffers);
+            fluidsFolder.add(configs[config.PRESET], 'SIM_RESOLUTION', { '32': 32, '64': 64, '128': 128, '256': 256 }).name('sim resolution').onFinishChange(initFramebuffers);
+            fluidsFolder.add(configs[config.PRESET], 'DENSITY_DISSIPATION', 0, 4.0).name('density diffusion');
+            fluidsFolder.add(configs[config.PRESET], 'VELOCITY_DISSIPATION', 0, 4.0).name('velocity diffusion');
+            fluidsFolder.add(configs[config.PRESET], 'PRESSURE', 0.0, 1.0).name('pressure');
+            fluidsFolder.add(configs[config.PRESET], 'CURL', 0, 50).name('vorticity').step(1);
+            fluidsFolder.add(configs[config.PRESET], 'SPLAT_RADIUS', 0.01, 1.0).name('splat radius');
+            fluidsFolder.add(configs[config.PRESET], 'SHADING').name('shading').onFinishChange(updateKeywords);
+            fluidsFolder.add(configs[config.PRESET], 'COLORFUL').name('colorful');
+            fluidsFolder.add(configs[config.PRESET], 'PAUSED').name('paused').listen();
+            fluidsFolder.add(configs[config.PRESET], 'SHOW_TRACK').name('show track').listen()
+            fluidsFolder.add(configs[config.PRESET], 'AUTOSPLAT_COUNT', 1, 10, 1).name('# splats');
+            // TODO: consider re-adding autosplat delay.
+            // autosplatFolder.add(config, 'AUTOSPLAT_DELAY', 0.1, 5.0).name('auto-splat interval seconds');
+
+            // TODO: consider re-adding offering random splats.
+            // gui.add({ fun: () => {
+            //     splatStack.push(parseInt(Math.random() * 20) + 5);
+            // } }, 'fun').name('Random splats');
 
             let bloomFolder = gui.addFolder('Bloom');
-            bloomFolder.add(config, 'BLOOM').name('enabled').onFinishChange(updateKeywords);
-            bloomFolder.add(config, 'BLOOM_INTENSITY', 0.1, 2.0).name('intensity');
-            bloomFolder.add(config, 'BLOOM_THRESHOLD', 0.0, 1.0).name('threshold');
+            bloomFolder.add(configs[config.PRESET], 'BLOOM').name('enabled').onFinishChange(updateKeywords);
+            bloomFolder.add(configs[config.PRESET], 'BLOOM_INTENSITY', 0.1, 2.0).name('intensity');
+            bloomFolder.add(configs[config.PRESET], 'BLOOM_THRESHOLD', 0.0, 1.0).name('threshold');
 
             let sunraysFolder = gui.addFolder('Sunrays');
-            sunraysFolder.add(config, 'SUNRAYS').name('enabled').onFinishChange(updateKeywords);
-            sunraysFolder.add(config, 'SUNRAYS_WEIGHT', 0.3, 1.0).name('weight');
+            sunraysFolder.add(configs[config.PRESET], 'SUNRAYS').name('enabled').onFinishChange(updateKeywords);
+            sunraysFolder.add(configs[config.PRESET], 'SUNRAYS_WEIGHT', 0.3, 1.0).name('weight');
 
             let captureFolder = gui.addFolder('Capture');
-            captureFolder.addColor(config, 'BACK_COLOR').name('background color');
-            captureFolder.add(config, 'TRANSPARENT').name('transparent');
+            captureFolder.addColor(configs[config.PRESET], 'BACK_COLOR').name('background color');
+            captureFolder.add(configs[config.PRESET], 'TRANSPARENT').name('transparent');
             captureFolder.add({ fun: captureScreenshot }, 'fun').name('take screenshot');
 
             let tempoConfig = gui.addFolder('Tempo Configuration');
-            tempoConfig.add(config, 'ON_BEAT').name('On Beat').listen();
-            tempoConfig.add(config, 'ON_TATUM').name('On Tatum').listen();
-            tempoConfig.add(config, 'ON_BAR').name('On Bar').listen();
-            tempoConfig.add(config, 'ON_SECTION').name('On Section').listen();
-            tempoConfig.add(config, 'ON_SEGMENT').name('On Segment').listen();
+            tempoConfig.add(configs[config.PRESET], 'ON_BEAT').name('On Beat').listen();
+            tempoConfig.add(configs[config.PRESET], 'ON_TATUM').name('On Tatum').listen();
+            tempoConfig.add(configs[config.PRESET], 'ON_BAR').name('On Bar').listen();
+            tempoConfig.add(configs[config.PRESET], 'ON_SECTION').name('On Section').listen();
+            tempoConfig.add(configs[config.PRESET], 'ON_SEGMENT').name('On Segment').listen();
 
             if (isMobile())
                 gui.close();
@@ -287,7 +393,7 @@ export default class WebGL {
         }
 
         function captureScreenshot () {
-            let res = getResolution(config.CAPTURE_RESOLUTION);
+            let res = getResolution(configs[config.PRESET].CAPTURE_RESOLUTION);
             let target = createFBO(res.width, res.height, ext.formatRGBA.internalFormat, ext.formatRGBA.format, ext.halfFloatTexType, gl.NEAREST);
             render(target);
 
@@ -966,8 +1072,8 @@ export default class WebGL {
         const displayMaterial = new Material(baseVertexShader, displayShaderSource);
 
         function initFramebuffers () {
-            let simRes = getResolution(config.SIM_RESOLUTION);
-            let dyeRes = getResolution(config.DYE_RESOLUTION);
+            let simRes = getResolution(configs[config.PRESET].SIM_RESOLUTION);
+            let dyeRes = getResolution(configs[config.PRESET].DYE_RESOLUTION);
 
             const texType = ext.halfFloatTexType;
             const rgba    = ext.formatRGBA;
@@ -994,7 +1100,7 @@ export default class WebGL {
         }
 
         function initBloomFramebuffers () {
-            let res = getResolution(config.BLOOM_RESOLUTION);
+            let res = getResolution(configs[config.PRESET].BLOOM_RESOLUTION);
 
             const texType = ext.halfFloatTexType;
             const rgba = ext.formatRGBA;
@@ -1003,7 +1109,7 @@ export default class WebGL {
             bloom = createFBO(res.width, res.height, rgba.internalFormat, rgba.format, texType, filtering);
 
             bloomFramebuffers.length = 0;
-            for (let i = 0; i < config.BLOOM_ITERATIONS; i++)
+            for (let i = 0; i < configs[config.PRESET].BLOOM_ITERATIONS; i++)
             {
                 let width = res.width >> (i + 1);
                 let height = res.height >> (i + 1);
@@ -1016,7 +1122,7 @@ export default class WebGL {
         }
 
         function initSunraysFramebuffers () {
-            let res = getResolution(config.SUNRAYS_RESOLUTION);
+            let res = getResolution(configs[config.PRESET].SUNRAYS_RESOLUTION);
 
             const texType = ext.halfFloatTexType;
             const r = ext.formatR;
@@ -1145,15 +1251,15 @@ export default class WebGL {
 
         function updateKeywords () {
             let displayKeywords = [];
-            if (config.SHADING) displayKeywords.push("SHADING");
-            if (config.BLOOM) displayKeywords.push("BLOOM");
-            if (config.SUNRAYS) displayKeywords.push("SUNRAYS");
+            if (configs[config.PRESET].SHADING) displayKeywords.push("SHADING");
+            if (configs[config.PRESET].BLOOM) displayKeywords.push("BLOOM");
+            if (configs[config.PRESET].SUNRAYS) displayKeywords.push("SUNRAYS");
             displayMaterial.setKeywords(displayKeywords);
         }
 
         function displayCurrentSong() {
             var songDiv = document.getElementsByClassName('song')[0]
-            if (!active || !config.SHOW_TRACK) {
+            if (!active || !configs[config.PRESET].SHOW_TRACK) {
                 songDiv.innerHTML = '';
             }
             else if (curName && curAlbum && curImage && curArtists) {
@@ -1206,15 +1312,15 @@ export default class WebGL {
 
 
         function autosplat() {
-           if (config.AUTOSPLAT_ENABLED && !config.PAUSED) {
+           if (configs[config.PRESET].AUTOSPLAT_ENABLED && !configs[config.PRESET].PAUSED) {
                insertSplat(
-                    config.EXTRA_SPLAT ? config.AUTOSPLAT_COUNT + 1 : config.AUTOSPLAT_COUNT,
-                    config.r, config.g, config.b, volumeMultiplier);
+                    configs[config.PRESET].EXTRA_SPLAT ? configs[config.PRESET].AUTOSPLAT_COUNT + 1 : configs[config.PRESET].AUTOSPLAT_COUNT,
+                    configs[config.PRESET].r, configs[config.PRESET].g, configs[config.PRESET].b, volumeMultiplier);
            }
-           config.EXTRA_SPLAT = false;
-           if (active) config.AUTOSPLAT_ENABLED = false; // turn off immediately
+           configs[config.PRESET].EXTRA_SPLAT = false;
+           if (active) configs[config.PRESET].AUTOSPLAT_ENABLED = false; // turn off immediately
 
-           setTimeout(autosplat, config.AUTOSPLAT_DELAY*100);
+           setTimeout(autosplat, configs[config.PRESET].AUTOSPLAT_DELAY*100);
         }
         
         let lastUpdateTime = Date.now();
@@ -1227,7 +1333,7 @@ export default class WebGL {
                 initFramebuffers();
             updateColors(dt);
             applyInputs();
-            if (!config.PAUSED)
+            if (!configs[config.PRESET].PAUSED)
                 step(dt);
             render(null);
             requestAnimationFrame(update);
@@ -1247,9 +1353,9 @@ export default class WebGL {
         }
 
         function updateColors (dt) {
-            if (!config.COLORFUL) return;
+            if (!configs[config.PRESET].COLORFUL) return;
 
-            colorUpdateTimer += dt * config.COLOR_UPDATE_SPEED;
+            colorUpdateTimer += dt * configs[config.PRESET].COLOR_UPDATE_SPEED;
             if (colorUpdateTimer >= 1) {
                 colorUpdateTimer = wrap(colorUpdateTimer, 0, 1);
                 pointers.forEach(p => {
@@ -1283,7 +1389,7 @@ export default class WebGL {
             gl.uniform2f(vorticityProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
             gl.uniform1i(vorticityProgram.uniforms.uVelocity, velocity.read.attach(0));
             gl.uniform1i(vorticityProgram.uniforms.uCurl, curl.attach(1));
-            gl.uniform1f(vorticityProgram.uniforms.curl, config.CURL);
+            gl.uniform1f(vorticityProgram.uniforms.curl, configs[config.PRESET].CURL);
             gl.uniform1f(vorticityProgram.uniforms.dt, dt);
             blit(velocity.write.fbo);
             velocity.swap();
@@ -1295,14 +1401,14 @@ export default class WebGL {
 
             clearProgram.bind();
             gl.uniform1i(clearProgram.uniforms.uTexture, pressure.read.attach(0));
-            gl.uniform1f(clearProgram.uniforms.value, config.PRESSURE);
+            gl.uniform1f(clearProgram.uniforms.value, configs[config.PRESET].PRESSURE);
             blit(pressure.write.fbo);
             pressure.swap();
 
             pressureProgram.bind();
             gl.uniform2f(pressureProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
             gl.uniform1i(pressureProgram.uniforms.uDivergence, divergence.attach(0));
-            for (let i = 0; i < config.PRESSURE_ITERATIONS; i++) {
+            for (let i = 0; i < configs[config.PRESET].PRESSURE_ITERATIONS; i++) {
                 gl.uniform1i(pressureProgram.uniforms.uPressure, pressure.read.attach(1));
                 blit(pressure.write.fbo);
                 pressure.swap();
@@ -1323,7 +1429,7 @@ export default class WebGL {
             gl.uniform1i(advectionProgram.uniforms.uVelocity, velocityId);
             gl.uniform1i(advectionProgram.uniforms.uSource, velocityId);
             gl.uniform1f(advectionProgram.uniforms.dt, dt);
-            gl.uniform1f(advectionProgram.uniforms.dissipation, config.VELOCITY_DISSIPATION);
+            gl.uniform1f(advectionProgram.uniforms.dissipation, configs[config.PRESET].VELOCITY_DISSIPATION);
             blit(velocity.write.fbo);
             velocity.swap();
 
@@ -1333,20 +1439,20 @@ export default class WebGL {
                 gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
             gl.uniform1i(advectionProgram.uniforms.uVelocity, velocity.read.attach(0));
             gl.uniform1i(advectionProgram.uniforms.uSource, dye.read.attach(1));
-            gl.uniform1f(advectionProgram.uniforms.dissipation, config.DENSITY_DISSIPATION);
+            gl.uniform1f(advectionProgram.uniforms.dissipation, configs[config.PRESET].DENSITY_DISSIPATION);
             blit(dye.write.fbo);
             dye.swap();
         }
 
         function render (target) {
-            if (config.BLOOM)
+            if (configs[config.PRESET].BLOOM)
                 applyBloom(dye.read, bloom);
-            if (config.SUNRAYS) {
+            if (configs[config.PRESET].SUNRAYS) {
                 applySunrays(dye.read, dye.write, sunrays);
                 blur(sunrays, sunraysTemp, 1);
             }
 
-            if (target == null || !config.TRANSPARENT) {
+            if (target == null || !configs[config.PRESET].TRANSPARENT) {
                 gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
                 gl.enable(gl.BLEND);
             }
@@ -1359,9 +1465,9 @@ export default class WebGL {
             gl.viewport(0, 0, width, height);
 
             let fbo = target == null ? null : target.fbo;
-            if (!config.TRANSPARENT)
-                drawColor(fbo, normalizeColor(config.BACK_COLOR));
-            if (target == null && config.TRANSPARENT)
+            if (!configs[config.PRESET].TRANSPARENT)
+                drawColor(fbo, normalizeColor(configs[config.PRESET].BACK_COLOR));
+            if (target == null && configs[config.PRESET].TRANSPARENT)
                 drawCheckerboard(fbo);
             drawDisplay(fbo, width, height);
         }
@@ -1380,16 +1486,16 @@ export default class WebGL {
 
         function drawDisplay (fbo, width, height) {
             displayMaterial.bind();
-            if (config.SHADING)
+            if (configs[config.PRESET].SHADING)
                 gl.uniform2f(displayMaterial.uniforms.texelSize, 1.0 / width, 1.0 / height);
             gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
-            if (config.BLOOM) {
+            if (configs[config.PRESET].BLOOM) {
                 gl.uniform1i(displayMaterial.uniforms.uBloom, bloom.attach(1));
                 gl.uniform1i(displayMaterial.uniforms.uDithering, ditheringTexture.attach(2));
                 let scale = getTextureScale(ditheringTexture, width, height);
                 gl.uniform2f(displayMaterial.uniforms.ditherScale, scale.x, scale.y);
             }
-            if (config.SUNRAYS)
+            if (configs[config.PRESET].SUNRAYS)
                 gl.uniform1i(displayMaterial.uniforms.uSunrays, sunrays.attach(3));
             blit(fbo);
         }
@@ -1402,12 +1508,12 @@ export default class WebGL {
 
             gl.disable(gl.BLEND);
             bloomPrefilterProgram.bind();
-            let knee = config.BLOOM_THRESHOLD * config.BLOOM_SOFT_KNEE + 0.0001;
-            let curve0 = config.BLOOM_THRESHOLD - knee;
+            let knee = configs[config.PRESET].BLOOM_THRESHOLD * configs[config.PRESET].BLOOM_SOFT_KNEE + 0.0001;
+            let curve0 = configs[config.PRESET].BLOOM_THRESHOLD - knee;
             let curve1 = knee * 2;
             let curve2 = 0.25 / knee;
             gl.uniform3f(bloomPrefilterProgram.uniforms.curve, curve0, curve1, curve2);
-            gl.uniform1f(bloomPrefilterProgram.uniforms.threshold, config.BLOOM_THRESHOLD);
+            gl.uniform1f(bloomPrefilterProgram.uniforms.threshold, configs[config.PRESET].BLOOM_THRESHOLD);
             gl.uniform1i(bloomPrefilterProgram.uniforms.uTexture, source.attach(0));
             gl.viewport(0, 0, last.width, last.height);
             blit(last.fbo);
@@ -1438,7 +1544,7 @@ export default class WebGL {
             bloomFinalProgram.bind();
             gl.uniform2f(bloomFinalProgram.uniforms.texelSize, last.texelSizeX, last.texelSizeY);
             gl.uniform1i(bloomFinalProgram.uniforms.uTexture, last.attach(0));
-            gl.uniform1f(bloomFinalProgram.uniforms.intensity, config.BLOOM_INTENSITY);
+            gl.uniform1f(bloomFinalProgram.uniforms.intensity, configs[config.PRESET].BLOOM_INTENSITY);
             gl.viewport(0, 0, destination.width, destination.height);
             blit(destination.fbo);
         }
@@ -1451,7 +1557,7 @@ export default class WebGL {
             blit(mask.fbo);
 
             sunraysProgram.bind();
-            gl.uniform1f(sunraysProgram.uniforms.weight, config.SUNRAYS_WEIGHT);
+            gl.uniform1f(sunraysProgram.uniforms.weight, configs[config.PRESET].SUNRAYS_WEIGHT);
             gl.uniform1i(sunraysProgram.uniforms.uTexture, mask.attach(0));
             gl.viewport(0, 0, destination.width, destination.height);
             blit(destination.fbo);
@@ -1471,8 +1577,8 @@ export default class WebGL {
         }
 
         function splatPointer (pointer) {
-            let dx = pointer.deltaX * config.SPLAT_FORCE;
-            let dy = pointer.deltaY * config.SPLAT_FORCE;
+            let dx = pointer.deltaX * configs[config.PRESET].SPLAT_FORCE;
+            let dy = pointer.deltaY * configs[config.PRESET].SPLAT_FORCE;
             splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
         }
 
@@ -1519,12 +1625,12 @@ export default class WebGL {
             gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
             gl.uniform2f(splatProgram.uniforms.point, x, y);
             gl.uniform3f(splatProgram.uniforms.color, dx, dy, 0.0);
-            let radius = config.SPLAT_RADIUS / 100.0;
-            if (config.AUTOSPLAT_ENABLED && config.MUSIC_TYPE !== '') {
+            let radius = configs[config.PRESET].SPLAT_RADIUS / 100.0;
+            if (configs[config.PRESET].AUTOSPLAT_ENABLED && configs[config.PRESET].MUSIC_TYPE !== '') {
                 // R = r * v / C
-                radius = (config.SPLAT_RADIUS * volumeMultiplier) / splatRadiusSettings[config.MUSIC_TYPE];
+                radius = (configs[config.PRESET].SPLAT_RADIUS * volumeMultiplier) / splatRadiusSettings[configs[config.PRESET].MUSIC_TYPE];
             }
-            console.log('using radius: ', radius, ' for music type: ', config.MUSIC_TYPE)
+            console.log('using radius: ', radius, ' for music type: ', configs[config.PRESET].MUSIC_TYPE)
             gl.uniform1f(splatProgram.uniforms.radius, correctRadius(radius));
             blit(velocity.write.fbo);
             velocity.swap();
@@ -1595,7 +1701,7 @@ export default class WebGL {
 
         window.addEventListener('keydown', e => {
             if (e.code === 'KeyP')
-                config.PAUSED = !config.PAUSED;
+                configs[config.PRESET].PAUSED = !configs[config.PRESET].PAUSED;
             if (e.key === ' ')
                 splatStack.push(parseInt(Math.random() * 20) + 5);
         });
